@@ -273,7 +273,9 @@ export function createTodoContinuationHook(
           typeof context === 'number' && Number.isFinite(context) && context > 0
             ? context
             : undefined;
-        contextLimitByModel.set(key, limit);
+        if (limit !== undefined) {
+          contextLimitByModel.set(key, limit);
+        }
         return limit;
       } catch (error) {
         log(

@@ -743,9 +743,11 @@ describe('createTodoContinuationHook', () => {
     });
 
     test('does not inject context warning when model has no configured context limit', async () => {
-      const ctx = createMockContext({
-        providersResult: providersWithContextLimit(),
-      });
+      let contextLimit: number | undefined;
+      const ctx = createMockContext();
+      ctx.client.config.providers = mock(async () =>
+        providersWithContextLimit(contextLimit),
+      );
       const hook = createTodoContinuationHook(ctx);
       const output = userMessages('review this diff', 'sub1', 'oracle');
 
@@ -761,6 +763,14 @@ describe('createTodoContinuationHook', () => {
       await hook.handleMessagesTransform(output);
 
       expect(allMessageText(output)).not.toContain(
+        SUBAGENT_CONTEXT_HYGIENE_REMINDER,
+      );
+
+      contextLimit = 1000;
+      await hook.handleToolExecuteAfter({ tool: 'grep', sessionID: 'sub1' });
+      await hook.handleMessagesTransform(output);
+
+      expect(allMessageText(output)).toContain(
         SUBAGENT_CONTEXT_HYGIENE_REMINDER,
       );
     });
