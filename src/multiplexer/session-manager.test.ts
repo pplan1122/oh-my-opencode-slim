@@ -59,6 +59,7 @@ function createDeferred<T>() {
 describe('MultiplexerSessionManager', () => {
   const realDateNow = Date.now;
   const originalChildEnv = process.env.OMOS_MULTIPLEXER_CHILD;
+  const originalTmuxPane = process.env.TMUX_PANE;
 
   beforeEach(() => {
     mockMultiplexer.spawnPane.mockReset();
@@ -72,6 +73,9 @@ describe('MultiplexerSessionManager', () => {
     mockMultiplexer.isInsideSession.mockReturnValue(true);
     Date.now = realDateNow;
     delete process.env.OMOS_MULTIPLEXER_CHILD;
+    process.env.TMUX_PANE = '%controller';
+    (MultiplexerSessionManager as any).activeControllerKey = null;
+    (MultiplexerSessionManager as any).hasActiveController = false;
   });
 
   afterEach(() => {
@@ -81,6 +85,13 @@ describe('MultiplexerSessionManager', () => {
     } else {
       process.env.OMOS_MULTIPLEXER_CHILD = originalChildEnv;
     }
+    if (originalTmuxPane === undefined) {
+      delete process.env.TMUX_PANE;
+    } else {
+      process.env.TMUX_PANE = originalTmuxPane;
+    }
+    (MultiplexerSessionManager as any).activeControllerKey = null;
+    (MultiplexerSessionManager as any).hasActiveController = false;
   });
 
   describe('constructor', () => {
@@ -107,6 +118,35 @@ describe('MultiplexerSessionManager', () => {
       });
 
       expect(mockMultiplexer.spawnPane).not.toHaveBeenCalled();
+    });
+
+    test('only one plugin instance owns multiplexer pane spawning per pane', async () => {
+      const ctx = createMockContext();
+      const first = new MultiplexerSessionManager(
+        ctx,
+        defaultMultiplexerConfig,
+      );
+      const second = new MultiplexerSessionManager(
+        ctx,
+        defaultMultiplexerConfig,
+      );
+
+      await first.onSessionCreated({
+        type: 'session.created',
+        properties: { info: { id: 'child-first', parentID: 'parent' } },
+      });
+      await second.onSessionCreated({
+        type: 'session.created',
+        properties: { info: { id: 'child-second', parentID: 'parent' } },
+      });
+
+      expect(mockMultiplexer.spawnPane).toHaveBeenCalledTimes(1);
+      expect(mockMultiplexer.spawnPane).toHaveBeenCalledWith(
+        'child-first',
+        'Subagent',
+        `http://localhost:${process.env.OPENCODE_PORT ?? '4096'}/`,
+        '/test/directory',
+      );
     });
   });
 

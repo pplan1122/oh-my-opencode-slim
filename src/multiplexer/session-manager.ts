@@ -57,6 +57,9 @@ const SESSION_MISSING_GRACE_MS = POLL_INTERVAL_BACKGROUND_MS * 3;
  * with polling kept as a fallback for reliability.
  */
 export class MultiplexerSessionManager {
+  private static activeControllerKey: string | null = null;
+  private static hasActiveController = false;
+
   private client: OpencodeClient;
   private serverUrl: string;
   private directory: string;
@@ -78,16 +81,43 @@ export class MultiplexerSessionManager {
       ctx.serverUrl?.toString() ?? `http://localhost:${defaultPort}`;
 
     this.multiplexer = getMultiplexer(config);
+    const controllerKey = this.getControllerKey(config.type);
+    let isController = false;
+    if (controllerKey !== null) {
+      if (!MultiplexerSessionManager.hasActiveController) {
+        MultiplexerSessionManager.activeControllerKey = controllerKey;
+        MultiplexerSessionManager.hasActiveController = true;
+        isController = true;
+      } else {
+        isController = false;
+      }
+    }
+
     this.enabled =
       process.env.OMOS_MULTIPLEXER_CHILD !== '1' &&
       config.type !== 'none' &&
-      this.multiplexer?.isInsideSession() === true;
+      this.multiplexer?.isInsideSession() === true &&
+      isController;
 
     log('[multiplexer-session-manager] initialized', {
       enabled: this.enabled,
       type: config.type,
       serverUrl: this.serverUrl,
+      controllerKey,
+      activeControllerKey: MultiplexerSessionManager.activeControllerKey,
     });
+  }
+
+  private getControllerKey(type: MultiplexerConfig['type']): string | null {
+    if (type === 'tmux') {
+      return process.env.TMUX_PANE ?? null;
+    }
+
+    if (type === 'zellij') {
+      return process.env.ZELLIJ_PANE_ID ?? process.env.ZELLIJ ?? null;
+    }
+
+    return null;
   }
 
   async onSessionCreated(event: SessionEvent): Promise<void> {
@@ -558,6 +588,11 @@ export class MultiplexerSessionManager {
     this.knownSessions.clear();
     this.spawningSessions.clear();
     this.closingSessions.clear();
+
+    if (this.enabled) {
+      MultiplexerSessionManager.hasActiveController = false;
+      MultiplexerSessionManager.activeControllerKey = null;
+    }
 
     log('[multiplexer-session-manager] cleanup complete');
   }
