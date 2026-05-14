@@ -479,6 +479,7 @@ function buildOpencodeAttachCommand(
   directory: string,
 ): string {
   return [
+    'OMOS_MULTIPLEXER_CHILD=1',
     'opencode',
     'attach',
     quoteShellArg(serverUrl),

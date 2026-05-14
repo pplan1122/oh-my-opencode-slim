@@ -58,6 +58,7 @@ export class TmuxMultiplexer implements Multiplexer {
       const quotedSessionId = quoteShellArg(sessionId);
 
       const opencodeCmd = [
+        'OMOS_MULTIPLEXER_CHILD=1',
         'opencode',
         'attach',
         quotedUrl,
