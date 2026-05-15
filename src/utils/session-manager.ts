@@ -258,7 +258,7 @@ export class SessionManager {
 
     return [
       '### Resumable Sessions',
-      'Reuse only for clear continuation of the same thread. Otherwise start fresh.',
+      'Reuse only completed/reconciled threads. Poll running jobs from Background Job Board.',
       '',
       ...lines,
     ].join('\n');

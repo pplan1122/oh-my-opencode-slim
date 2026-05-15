@@ -93,9 +93,7 @@ export const FALLBACK_FAILOVER_TIMEOUT_MS = 15_000;
 export const DEFAULT_MAX_SUBAGENT_DEPTH = 3;
 
 // Workflow reminders
-export const PHASE_REMINDER_TEXT = `!IMPORTANT! Recall the workflow rules:
-Understand → build a short work graph with independent lanes, dependencies, and advisory ownership → dispatch independent specialists as background tasks → record task/session IDs → continue orchestration → poll task_status for terminal results → reconcile → verify.
-Only consume outputs or advance dependent work when background results are terminal. !END!`;
+export const PHASE_REMINDER_TEXT = `!IMPORTANT! Scheduler workflow: plan lanes/dependencies → dispatch background specialists → track task IDs → poll task_status → reconcile terminal results → verify. Do not consume running-job output or advance dependent work. !END!`;
 
 // Tmux pane spawn delay (ms) — gives TmuxSessionManager time to create pane
 export const TMUX_SPAWN_DELAY_MS = 500;

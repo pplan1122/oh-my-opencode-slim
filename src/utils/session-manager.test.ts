@@ -26,6 +26,8 @@ describe('SessionManager', () => {
     });
 
     const prompt = manager.formatForPrompt('parent-1');
+    expect(prompt).toContain('completed/reconciled threads');
+    expect(prompt).toContain('Background Job Board');
     expect(prompt).toContain('exp-1 first thread');
     expect(prompt).toContain('exp-3 third thread');
     expect(prompt).not.toContain('exp-2 second thread');
