@@ -502,7 +502,7 @@ Use this section as a map: start with installation, then jump to features, confi
 | **[Goal](docs/goal.md)** | Pin an objective with `/goal` so todos, delegation, and verification stay aligned |
 | **[Todo Continuation](docs/todo-continuation.md)** | Auto-continue orchestrator sessions with cooldowns and safety checks |
 | **[Preset Switching](docs/preset-switching.md)** | Switch agent model presets at runtime with `/preset` |
-| **[Subtask](docs/subtask.md)** | Run a bounded child worker with `/subtask` and return a structured summary to the main session |
+
 | **[Codemap](docs/codemap.md)** | Generate hierarchical codemaps to understand large codebases faster |
 | **[Clonedeps](docs/clonedeps.md)** | Clone selected dependency source into an ignored local workspace for inspection |
 | **[Interview](docs/interview.md)** | Turn rough ideas into a structured markdown spec through a browser-based Q&A flow |
