@@ -56,11 +56,11 @@ const AGENT_DESCRIPTIONS: Record<string, string> = {
 - **Rule of thumb:** Need senior architect review? → @oracle. Need code review or simplification? → @oracle. Routine coordination or final synthesis? → handle directly.`,
 
   designer: `@designer
-- Lane: User-facing UI/UX design related edits, polish, and review
+- Lane: UI/UX design, related edits, design polishign, and review
 - Role: UI/UX specialist for intentional, polished experiences
 - Permissions: Read/write files
 - Stats: 10x better UI/UX than orchestrator
-- Capabilities: Visual relevant edits, interactions, responsive layouts, design systems with aesthetic intent, deep UI/UX knowledge.
+- Capabilities: Goot design taste, visual relevant edits, interactions, responsive layouts, design systems with aesthetic intent, deep UI/UX knowledge.
 - Weakness: copywriting, needs Orchestrator control, dictation, reviews
 - **Delegate when:** User-facing interfaces needing polish • Responsive layouts • UX-critical components (forms, nav, dashboards) • Visual consistency systems • Animations/micro-interactions • Landing/marketing pages • Refining functional→delightful • Reviewing existing UI/UX quality
 - **Don't delegate when:** Backend/logic with no visual • Quick prototypes where design doesn't matter yet
@@ -71,6 +71,7 @@ const AGENT_DESCRIPTIONS: Record<string, string> = {
 - Role: Fast execution specialist for well-defined tasks.
 - Permissions: Read/write files
 - Stats: 2x faster code edits, 1/2 cost of orchestrator, 0.8x quality of orchestrator
+- Weakness: design taste
 - Tools/Constraints: Execution-focused—no research, no architectural decisions
 - **Delegate when:** For implementation work, think and triage first. If the change is non-trivial or multi-file, hand bounded execution to @fixer • Writing or updating tests • Tasks that touch test files, fixtures, mocks, or test helpers. Parallelization benefits: Task involves multiple folders and multiple files modificaiton, scoping work per folder and spawning parallel @fixers for each folder.
 - **Don't delegate when:** Needs discovery/research/decisions • Single small change (<20 lines, one file) • Unclear requirements needing iteration • Explaining to fixer > doing • Tight integration with your current work • Sequential dependencies
