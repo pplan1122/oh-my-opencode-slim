@@ -100,6 +100,38 @@ oh-my-opencode-slim/
 5. Run `bun test` to verify tests pass
 6. Commit changes
 
+## V2 Branch and Worktree Workflow
+
+Keep `master` stable for the npm `latest` release. Use `v2-beta` as the V2
+integration and npm `beta` release branch, but do not develop unrelated features
+directly on it.
+
+Recommended branch flow:
+
+```text
+master              stable latest users
+v2-beta            V2 integration branch; publish @beta from here
+v2/<feature-name>  focused V2 feature branches merged into v2-beta
+```
+
+For new V2 work, branch from `v2-beta`:
+
+```bash
+git checkout v2-beta
+git pull --ff-only origin v2-beta
+git checkout -b v2/<feature-name>
+```
+
+For parallel feature work, prefer a worktree so `v2-beta` stays clean:
+
+```bash
+git worktree add ../oh-my-opencode-slim-v2-<feature-name> \
+  -b v2/<feature-name> v2-beta
+```
+
+Create PRs from `v2/<feature-name>` into `v2-beta`. Merge into `master` only
+when V2 is ready to become the stable `latest` release.
+
 ## Tmux Session Lifecycle Management
 
 When working with tmux integration, understanding the session lifecycle is crucial for preventing orphaned processes and ghost panes.
