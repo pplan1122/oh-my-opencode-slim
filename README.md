@@ -116,6 +116,11 @@ improve the plugin itself. Use it for model tuning, custom agents, prompt
 overrides, skill/MCP permissions, presets, optional agents, background
 orchestration, and recurring workflow friction.
 
+<div align="center">
+  <img src="img/oh-my-opencode-skill.png" alt="oh-my-opencode-slim skill in use" width="600">
+  <p><i>Ask the bundled skill to tune and improve your agent setup.</i></p>
+</div>
+
 See **[Skills](docs/skills.md#oh-my-opencode-slim)** for examples and safety
 rules.
 
