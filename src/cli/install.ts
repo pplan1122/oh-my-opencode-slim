@@ -226,6 +226,43 @@ export async function configureBackgroundSubagents(
   return { enabledNow: false, configuredTarget: target };
 }
 
+export async function shouldInstallCompanion(
+  config: InstallConfig,
+): Promise<boolean> {
+  if (config.companion === 'yes') return true;
+  if (config.companion === 'no') return false;
+
+  if (config.dryRun) {
+    printInfo(
+      'Dry run mode - would ask to install the desktop companion (default: yes).',
+    );
+    config.companion = 'yes';
+    return true;
+  }
+
+  if (!process.stdin.isTTY) {
+    printInfo(
+      'Skipped desktop companion prompt in non-TTY mode. Use --companion=yes to install it.',
+    );
+    config.companion = 'no';
+    return false;
+  }
+
+  console.log();
+  printInfo('The optional desktop companion shows live agent activity.');
+  const shouldInstall = await confirm(
+    'Install and enable the desktop companion?',
+    true,
+  );
+  config.companion = shouldInstall ? 'yes' : 'no';
+
+  if (!shouldInstall) {
+    printInfo('Desktop companion install skipped.');
+  }
+
+  return shouldInstall;
+}
+
 function handleStepResult(
   result: ConfigMergeResult,
   successMsg: string,
@@ -246,9 +283,11 @@ async function runInstall(config: InstallConfig): Promise<number> {
 
   printHeader(isUpdate);
 
+  const companionInstall = await shouldInstallCompanion(config);
+
   let totalSteps = 7;
   if (config.installCustomSkills) totalSteps += 1;
-  if (config.companion === 'yes') totalSteps += 1;
+  if (companionInstall) totalSteps += 1;
   totalSteps += 1;
 
   let step = 1;
@@ -313,7 +352,7 @@ async function runInstall(config: InstallConfig): Promise<number> {
   printStep(step++, totalSteps, 'Configuring OpenCode background subagents...');
   const backgroundSubagents = await configureBackgroundSubagents(config);
 
-  if (config.companion === 'yes') {
+  if (companionInstall) {
     printStep(step++, totalSteps, 'Installing desktop companion binary...');
     const companionResult = await installCompanion(config);
     if (!handleStepResult(companionResult, 'Companion installed')) return 1;

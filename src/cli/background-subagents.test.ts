@@ -142,6 +142,18 @@ describe('parseArgs background subagents', () => {
   });
 });
 
+describe('parseArgs companion', () => {
+  test('defaults companion install to ask', () => {
+    expect(parseArgs([]).companion).toBe('ask');
+  });
+
+  test('parses companion mode override', () => {
+    expect(parseArgs(['--companion=yes']).companion).toBe('yes');
+    expect(parseArgs(['--companion=no']).companion).toBe('no');
+    expect(parseArgs(['--companion=ask']).companion).toBe('ask');
+  });
+});
+
 describe('configureBackgroundSubagents', () => {
   let tempDir: string | undefined;
   const originalBackgroundEnv =

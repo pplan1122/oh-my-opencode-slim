@@ -2,13 +2,18 @@
 import { doctor, parseDoctorArgs } from './doctor';
 import { install } from './install';
 import { getGeneratedPresetNames, isGeneratedPresetName } from './providers';
-import type { BackgroundSubagentsArg, BooleanArg, InstallArgs } from './types';
+import type {
+  BackgroundSubagentsArg,
+  BooleanArg,
+  CompanionArg,
+  InstallArgs,
+} from './types';
 
 export function parseArgs(args: string[]): InstallArgs {
   const result: InstallArgs = {
     tui: true,
     skills: 'yes',
-    companion: 'no',
+    companion: 'ask',
   };
 
   for (const arg of args) {
@@ -17,9 +22,9 @@ export function parseArgs(args: string[]): InstallArgs {
     } else if (arg.startsWith('--skills=')) {
       result.skills = arg.split('=')[1] as BooleanArg;
     } else if (arg.startsWith('--companion=')) {
-      const mode = arg.split('=')[1] as BooleanArg;
-      if (!['yes', 'no'].includes(mode)) {
-        console.error('Unsupported --companion value: use yes or no');
+      const mode = arg.split('=')[1] as CompanionArg;
+      if (!['ask', 'yes', 'no'].includes(mode)) {
+        console.error('Unsupported --companion value: use ask, yes, or no');
         process.exit(1);
       }
       result.companion = mode;
@@ -68,8 +73,8 @@ Usage:
 
 Options:
   --skills=yes|no        Install bundled skills (default: yes)
-  --companion=yes|no     Install desktop companion binary and enable config
-                         (default: no)
+  --companion=ask|yes|no Install desktop companion binary and enable config
+                         (default: ask; prompt defaults to yes)
   --preset=<name>        Active generated config preset (default: openai)
   --background-subagents=ask|yes|no
                           Persist required OpenCode background subagent env

@@ -33,15 +33,17 @@ You can enable the companion by adding a `companion` section to your setting con
 
 ## Installer Flag
 
-When running the installer, pass `--companion=yes` to download the native
-binary and generate the enabled config block:
+During interactive installation, the installer asks whether to download and
+enable the native Companion binary. The prompt defaults to `yes`, so pressing
+Enter installs it.
+
+For automation, pass `--companion=yes` to install without prompting:
 
 ```bash
 bunx oh-my-opencode-slim install --companion=yes
 ```
 
-Pass `--companion=no` or omit the flag to skip the native binary and omit the
-config block.
+Pass `--companion=no` to skip the native binary and omit the config block.
 
 ---
 

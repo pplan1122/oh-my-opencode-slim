@@ -1,5 +1,6 @@
 export type BooleanArg = 'yes' | 'no';
 export type BackgroundSubagentsArg = 'ask' | 'yes' | 'no';
+export type CompanionArg = 'ask' | BooleanArg;
 
 export interface InstallArgs {
   tui: boolean;
@@ -9,7 +10,7 @@ export interface InstallArgs {
   reset?: boolean;
   backgroundSubagents?: BackgroundSubagentsArg;
   backgroundSubagentsTarget?: string;
-  companion?: BooleanArg;
+  companion?: CompanionArg;
 }
 
 export interface OpenCodeConfig {
@@ -28,7 +29,7 @@ export interface InstallConfig {
   reset: boolean;
   backgroundSubagents: BackgroundSubagentsArg;
   backgroundSubagentsTarget?: string;
-  companion?: BooleanArg;
+  companion?: CompanionArg;
 }
 
 export interface ConfigMergeResult {
