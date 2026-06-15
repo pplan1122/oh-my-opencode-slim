@@ -322,6 +322,7 @@ export function loadPluginConfig(
   if (config.companion) {
     config.companion = {
       enabled: config.companion.enabled ?? false,
+      binaryPath: config.companion.binaryPath,
       position: config.companion.position ?? 'bottom-right',
       size: config.companion.size ?? 'medium',
     };

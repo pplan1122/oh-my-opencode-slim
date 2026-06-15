@@ -416,6 +416,11 @@
         "enabled": {
           "type": "boolean"
         },
+        "binaryPath": {
+          "description": "Path to a custom companion binary to launch.",
+          "type": "string",
+          "minLength": 1
+        },
         "position": {
           "type": "string",
           "enum": [

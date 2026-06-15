@@ -189,6 +189,11 @@ export type FailoverConfig = z.infer<typeof FailoverConfigSchema>;
 
 export const CompanionConfigSchema = z.object({
   enabled: z.boolean().optional(),
+  binaryPath: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Path to a custom companion binary to launch.'),
   position: z
     .enum(['bottom-right', 'bottom-left', 'top-right', 'top-left'])
     .optional(),

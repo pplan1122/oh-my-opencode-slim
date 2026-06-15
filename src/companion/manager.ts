@@ -46,7 +46,7 @@ export function stateFilePath(): string {
   );
 }
 
-function binaryPath(): string | null {
+function defaultBinaryPath(): string {
   const xdg = process.env.XDG_DATA_HOME?.trim();
   const base =
     xdg && path.isAbsolute(xdg)
@@ -56,7 +56,7 @@ function binaryPath(): string | null {
     os.platform() === 'win32'
       ? 'oh-my-opencode-slim-companion.exe'
       : 'oh-my-opencode-slim-companion';
-  const bin = path.join(
+  return path.join(
     base,
     'opencode',
     'storage',
@@ -64,6 +64,13 @@ function binaryPath(): string | null {
     'bin',
     binaryName,
   );
+}
+
+export function resolveCompanionBinaryPath(
+  config?: CompanionConfig,
+): string | null {
+  const configured = config?.binaryPath?.trim();
+  const bin = configured || defaultBinaryPath();
   return existsSync(bin) ? bin : null;
 }
 
@@ -257,21 +264,9 @@ export class CompanionManager {
 
   private spawnIfAvailable(): void {
     if (this.config?.enabled !== true) return;
-    const bin = binaryPath();
+    const bin = resolveCompanionBinaryPath(this.config);
     if (!bin) {
-      const xdg = process.env.XDG_DATA_HOME?.trim();
-      const base =
-        xdg && path.isAbsolute(xdg)
-          ? xdg
-          : path.join(os.homedir(), '.local', 'share');
-      const expected = path.join(
-        base,
-        'o‍pencode',
-        'storage',
-        'oh-my-o‍pencode-slim',
-        'bin',
-        'oh-my-o‍pencode-slim-companion',
-      );
+      const expected = this.config.binaryPath?.trim() || defaultBinaryPath();
       log(
         `[companion] enabled but companion binary not found at expected path: ${expected}. Please install/download the companion binary separately.`,
       );

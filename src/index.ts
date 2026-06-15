@@ -84,7 +84,9 @@ async function appLog(
 /** Minimum expected registrations for a healthy plugin load. */
 const HEALTH_CHECK = {
   minAgents: 5,
-  minTools: 5,
+  // Default tool set when council and ACP agents are not configured:
+  // cancel_task, webfetch, ast_grep_search, ast_grep_replace.
+  minTools: 4,
   minMcps: 1,
 } as const;
 

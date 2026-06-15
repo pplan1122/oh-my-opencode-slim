@@ -10,6 +10,7 @@ You can enable the companion by adding a `companion` section to your setting con
 {
   "companion": {
     "enabled": true,
+    "binaryPath": "/path/to/oh-my-opencode-slim-companion",
     "position": "bottom-right",
     "size": "medium"
   }
@@ -28,6 +29,9 @@ You can enable the companion by adding a `companion` section to your setting con
   - `small` (80px)
   - `medium` (120px) (default)
   - `large` (160px)
+
+- **`companion.binaryPath`**: optional path to a custom companion binary. When
+  set, the runtime launches this binary instead of the default install path.
 
 ### Remembered Window Position
 
@@ -105,7 +109,8 @@ If `XDG_DATA_HOME` is unset, this resolves to:
 ~/.local/share/opencode/storage/oh-my-opencode-slim/bin/oh-my-opencode-slim-companion
 ```
 
-If the binary is not located in this directory, the plugin runtime will not start the companion window.
+If the binary is not located in this directory, set `companion.binaryPath` to
+the binary you want the plugin runtime to launch.
 
 ---
 
