@@ -3,14 +3,16 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   renameSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { crossSpawn } from '../utils/compat';
+import { formatError } from '../utils/errors';
 import {
   ensureConfigDir,
   ensureOpenCodeConfigDir,
@@ -245,7 +247,7 @@ function writeOpenCodePluginCacheManifest(
     return {
       success: false,
       configPath: cacheDir,
-      error: `Failed to write cache package.json: ${err}`,
+      error: `Failed to write cache package.json: ${formatError(err)}`,
     };
   }
 }
@@ -293,7 +295,7 @@ function verifyOpenCodePluginCache(cacheDir: string): ConfigMergeResult | null {
     return {
       success: false,
       configPath: cacheDir,
-      error: `Failed to verify cached plugin package: ${err}`,
+      error: `Failed to verify cached plugin package: ${formatError(err)}`,
     };
   }
 
@@ -323,7 +325,7 @@ export async function warmOpenCodePluginCache(): Promise<ConfigMergeResult | nul
     return {
       success: false,
       configPath: cacheDir,
-      error: `Failed to create OpenCode cache directory: ${err}`,
+      error: `Failed to create OpenCode cache directory: ${formatError(err)}`,
     };
   }
 
@@ -360,7 +362,7 @@ export async function warmOpenCodePluginCache(): Promise<ConfigMergeResult | nul
     return {
       success: false,
       configPath: cacheDir,
-      error: `Failed to warm OpenCode cache: ${err}`,
+      error: `Failed to warm OpenCode cache: ${formatError(err)}`,
     };
   }
 }
@@ -428,11 +430,59 @@ export function writeConfig(configPath: string, config: OpenCodeConfig): void {
   // Backup existing config if it exists
   if (existsSync(configPath)) {
     copyFileSync(configPath, bakPath);
+    saveTimestampedBackup(configPath);
   }
 
   // Atomic write pattern: write to tmp, then rename
   writeFileSync(tmpPath, content);
   renameSync(tmpPath, configPath);
+}
+
+// ── Fugu-style config safety ────────────────────────────────
+
+const BACKUP_ROOT = join(homedir(), '.opencode-backups');
+const MAX_BACKUPS = 10;
+
+function ensureBackupDir(): void {
+  if (!existsSync(BACKUP_ROOT)) {
+    mkdirSync(BACKUP_ROOT, { recursive: true, mode: 0o700 });
+  }
+}
+
+function saveTimestampedBackup(configPath: string): void {
+  try {
+    ensureBackupDir();
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const name = basename(configPath);
+    const dest = join(BACKUP_ROOT, `${ts}-${name}`);
+    copyFileSync(configPath, dest);
+
+    // Prune old backups: keep 10 most recent per file name
+    const files = readdirSync(BACKUP_ROOT)
+      .filter((f) => f.endsWith(`-${name}`))
+      .sort()
+      .reverse();
+    for (const old of files.slice(MAX_BACKUPS)) {
+      rmSync(join(BACKUP_ROOT, old), { force: true });
+    }
+  } catch {
+    // Backup failure is non-fatal; the atomic write + .bak still protect us.
+  }
+}
+
+function restoreLatestBackup(configPath: string): boolean {
+  try {
+    const name = basename(configPath);
+    const files = readdirSync(BACKUP_ROOT)
+      .filter((f) => f.endsWith(`-${name}`))
+      .sort()
+      .reverse();
+    if (files.length === 0) return false;
+    copyFileSync(join(BACKUP_ROOT, files[0]), configPath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function addPluginToOpenCodeConfig(): Promise<ConfigMergeResult> {
@@ -444,7 +494,7 @@ export async function addPluginToOpenCodeConfig(): Promise<ConfigMergeResult> {
     return {
       success: false,
       configPath,
-      error: `Failed to create config directory: ${err}`,
+      error: `Failed to create config directory: ${formatError(err)}`,
     };
   }
 
@@ -477,7 +527,7 @@ export async function addPluginToOpenCodeConfig(): Promise<ConfigMergeResult> {
     return {
       success: false,
       configPath,
-      error: `Failed to update opencode config: ${err}`,
+      error: `Failed to update opencode config: ${formatError(err)}`,
     };
   }
 }
@@ -491,7 +541,7 @@ export async function addPluginToOpenCodeTuiConfig(): Promise<ConfigMergeResult>
     return {
       success: false,
       configPath,
-      error: `Failed to create config directory: ${err}`,
+      error: `Failed to create config directory: ${formatError(err)}`,
     };
   }
 
@@ -520,7 +570,7 @@ export async function addPluginToOpenCodeTuiConfig(): Promise<ConfigMergeResult>
     return {
       success: false,
       configPath,
-      error: `Failed to update opencode TUI config: ${err}`,
+      error: `Failed to update opencode TUI config: ${formatError(err)}`,
     };
   }
 }
@@ -546,6 +596,7 @@ export function writeLiteConfig(
     // Backup existing config if it exists
     if (existsSync(configPath)) {
       copyFileSync(configPath, bakPath);
+      saveTimestampedBackup(configPath);
     }
 
     writeFileSync(tmpPath, content);
@@ -556,10 +607,29 @@ export function writeLiteConfig(
     return {
       success: false,
       configPath,
-      error: `Failed to write lite config: ${err}`,
+      error: `Failed to write lite config: ${formatError(err)}`,
     };
   }
 }
+
+// ── public API ──────────────────────────────────────────────
+
+/**
+ * Validate a JSON/JSONC config file by reading and re-serializing it.
+ * Returns null on success, or an error message.
+ */
+export function validateConfig(configPath: string): string | null {
+  try {
+    if (!existsSync(configPath)) return null;
+    const content = readFileSync(configPath, 'utf-8');
+    JSON.parse(stripJsonComments(content));
+    return null;
+  } catch (err) {
+    return `Config validation failed: ${formatError(err)}`;
+  }
+}
+
+export { BACKUP_ROOT, MAX_BACKUPS, restoreLatestBackup };
 
 export function disableDefaultAgents(): ConfigMergeResult {
   const configPath = getExistingConfigPath();
@@ -594,7 +664,7 @@ export function disableDefaultAgents(): ConfigMergeResult {
     return {
       success: false,
       configPath,
-      error: `Failed to disable default agents: ${err}`,
+      error: `Failed to disable default agents: ${formatError(err)}`,
     };
   }
 }
@@ -624,7 +694,7 @@ export function enableLspByDefault(): ConfigMergeResult {
     return {
       success: false,
       configPath,
-      error: `Failed to enable LSP: ${err}`,
+      error: `Failed to enable LSP: ${formatError(err)}`,
     };
   }
 }

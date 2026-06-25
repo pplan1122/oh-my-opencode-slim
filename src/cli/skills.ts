@@ -59,6 +59,29 @@ export function getSkillPermissionsForAgent(
     for (const name of disabledSkills) {
       permissions[name] = 'deny';
     }
+
+    // Reviewer agents always get book-rules, even when user provides an
+    // explicit skill list (the user's list is a floor, not a ceiling).
+    const REVIEWER_AGENTS = new Set(['oracle', 'council', 'councillor']);
+    if (REVIEWER_AGENTS.has(agentName)) {
+      const BOOK_RULES_SKILLS = [
+        'book-rules/clean-code',
+        'book-rules/clean-architecture',
+        'book-rules/refactoring',
+        'book-rules/working-effectively-with-legacy-code',
+        'book-rules/a-philosophy-of-software-design',
+        'book-rules/domain-driven-design',
+        'book-rules/designing-data-intensive-applications',
+        'book-rules/release-it',
+        'book-rules/the-pragmatic-programmer',
+      ];
+      for (const name of BOOK_RULES_SKILLS) {
+        if (!disabledSkills.has(name)) {
+          permissions[name] = 'allow';
+        }
+      }
+    }
+
     return permissions;
   }
 
@@ -84,6 +107,30 @@ export function getSkillPermissionsForAgent(
 
   for (const name of disabledSkills) {
     permissions[name] = 'deny';
+  }
+
+  // Review agents (oracle, council, councillor) need book-rules skills
+  // for architecture review, code quality assessment, and refactoring guidance.
+  // These are external skills installed by the user, so they must be
+  // explicitly allowlisted here instead of relying on the default '*' wildcard.
+  const REVIEWER_AGENTS = new Set(['oracle', 'council', 'councillor']);
+  if (REVIEWER_AGENTS.has(agentName)) {
+    const BOOK_RULES_SKILLS = [
+      'book-rules/clean-code',
+      'book-rules/clean-architecture',
+      'book-rules/refactoring',
+      'book-rules/working-effectively-with-legacy-code',
+      'book-rules/a-philosophy-of-software-design',
+      'book-rules/domain-driven-design',
+      'book-rules/designing-data-intensive-applications',
+      'book-rules/release-it',
+      'book-rules/the-pragmatic-programmer',
+    ];
+    for (const name of BOOK_RULES_SKILLS) {
+      if (!disabledSkills.has(name)) {
+        permissions[name] = 'allow';
+      }
+    }
   }
 
   return permissions;

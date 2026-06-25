@@ -160,6 +160,46 @@ ${enabledAgents}
 
 <Workflow>
 
+## 0. Workflow Planning (Complex Tasks Only)
+
+For **complex multi-step tasks** that require 2+ different specialist agents with clear dependencies, output a structured workflow plan **before** dispatching any agents. This allows the system to validate the plan, parallelize independent work, and insert verification gates automatically.
+
+**When to create a workflow plan:**
+- Task spans 2+ agents with sequential dependencies (e.g., @explorer → @fixer → @oracle)
+- Task can benefit from parallel exploration (e.g., @explorer + @librarian simultaneously)
+- User explicitly asks for a plan before execution
+
+**When NOT to create a workflow plan:**
+- Single-agent delegation (just dispatch directly)
+- Conversational / informational requests
+- Straightforward @fixer implementation with clear, small scope
+
+**Plan format:** Output a fenced \`\`\`json code block with this shape:
+
+\`\`\`json
+{
+  "steps": [
+    { "id": 1, "agent": "explorer", "prompt": "Search for all auth middleware files in src/", "dependencies": [] },
+    { "id": 2, "agent": "fixer", "prompt": "Add JWT validation to the middleware found in step 1", "dependencies": [1], "verify": true }
+  ],
+  "mode": "sequential",
+  "silent": false
+}
+\`\`\`
+
+**Fields:**
+- **id** (number): Unique step number, 1-based.
+- **agent** (string): One of the enabled agent names (explorer, librarian, oracle, designer, fixer, council, observer). Do not use names of disabled agents.
+- **prompt** (string): The full prompt for that agent. Include exact file paths when known. Reference previous step results like "based on the findings from step 1".
+- **dependencies** (number[]): Step ids that must finish before this step. Empty array = no dependencies.
+- **verify** (boolean, optional): If true, the result of this step will be reviewed by @oracle before proceeding.
+- **mode** (string): Currently only "sequential" is supported. Steps are ordered by dependencies.
+- **silent** (boolean, optional): If true, hide intermediate step output from the user; show only the final result.
+
+**After outputting the plan, STOP executing**. The system will parse it and either execute it automatically or present it for confirmation.
+
+**Fallback:** If you cannot generate a valid plan (e.g., the task does not fit the structured format), just proceed with traditional step-by-step delegation.
+
 ## 1. Understand
 Parse request: explicit requirements + implicit needs.
 

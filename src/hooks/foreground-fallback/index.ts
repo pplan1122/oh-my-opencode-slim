@@ -103,10 +103,9 @@ export class ForegroundFallbackManager {
    * Process an OpenCode plugin event.
    * Call this from the plugin's `event` hook for every event received.
    */
-  async handleEvent(rawEvent: unknown): Promise<void> {
+  async handleEvent(rawEvent: { type: string; properties?: unknown }): Promise<void> {
     if (!this.enabled) return;
-    const event = rawEvent as { type: string; properties?: unknown };
-    if (!event?.type) return;
+    const event = rawEvent;
 
     switch (event.type) {
       case 'message.updated': {

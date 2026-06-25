@@ -29,6 +29,7 @@ import {
   createPostFileToolNudgeHook,
   createReflectCommandHook,
   createTaskSessionManagerHook,
+  createWorkflowPlanningHook,
   ForegroundFallbackManager,
 } from './hooks';
 import { processImageAttachments } from './hooks/image-hook';
@@ -55,6 +56,7 @@ import {
   createDisplayNameMentionRewriter,
   resolveRuntimeAgentName,
 } from './utils';
+import { formatError, logError } from './utils/errors';
 import { initLogger, log } from './utils/logger';
 import { SubagentDepthTracker } from './utils/subagent-depth';
 import { collapseSystemInPlace } from './utils/system-collapse';
@@ -102,7 +104,7 @@ async function probeJSDOM(): Promise<string | null> {
     new JSDOM('<!DOCTYPE html><html><body>test</body></html>');
     return null;
   } catch (err) {
-    return String(err);
+    return formatError(err);
   }
 }
 
@@ -143,6 +145,7 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
   let deepworkCommandHook: ReturnType<typeof createDeepworkCommandHook>;
   let reflectCommandHook: ReturnType<typeof createReflectCommandHook>;
   let taskSessionManagerHook: ReturnType<typeof createTaskSessionManagerHook>;
+  let workflowPlanningHook: ReturnType<typeof createWorkflowPlanningHook>;
   let backgroundJobBoard: BackgroundJobBoard;
   let interviewManager: ReturnType<typeof createInterviewManager>;
   let presetManager: ReturnType<typeof createPresetManager>;
@@ -268,6 +271,9 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
     // Initialize phase reminder hook for workflow compliance
     phaseReminderHook = createPhaseReminderHook();
 
+    // Initialize workflow planning hook (MVP — plan detection + progress nudging)
+    workflowPlanningHook = createWorkflowPlanningHook();
+
     // Initialize available skills filter hook
     filterAvailableSkillsHook = createFilterAvailableSkillsHook(ctx, config);
 
@@ -340,11 +346,11 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
   } catch (err) {
     // Plugin init failed: log visibly before re-throwing so the user
     // sees something actionable instead of a silent "loaded but empty".
-    log('[plugin] FATAL: init failed', String(err));
+    log('[plugin] FATAL: init failed', formatError(err));
     await appLog(
       ctx,
       'error',
-      `INIT FAILED: ${String(err)}. Report at github.com/alvinunreal/oh-my-opencode-slim/issues/310`,
+      `INIT FAILED: ${formatError(err)}. Report at github.com/alvinunreal/oh-my-opencode-slim/issues/310`,
     );
     throw err;
   }
@@ -389,7 +395,7 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
     if (err) {
       const msg = `jsdom probe failed; webfetch tool will not work: ${err}`;
       log(`[plugin] WARN: ${msg}`);
-      appLog(ctx, 'warn', msg).catch(() => {});
+      appLog(ctx, 'warn', msg).catch((e) => { logError('[plugin]', 'appLog failed', e); });
     }
   });
 
@@ -406,7 +412,7 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
         log('[companion] startup update failed', companionResult.error);
       }
     } catch (err) {
-      log('[companion] startup update failed', String(err));
+      log('[companion] startup update failed', formatError(err));
     }
   }
 
@@ -684,7 +690,11 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
       if (!configMcp) {
         opencodeConfig.mcp = { ...mcps };
       } else {
-        Object.assign(configMcp, mcps);
+        for (const [name, mcpDef] of Object.entries(mcps)) {
+          if (!(name in configMcp)) {
+            configMcp[name] = mcpDef;
+          }
+        }
       }
 
       // Get all MCP names from the merged config (built-in + custom)
@@ -898,6 +908,15 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
         output as { args?: unknown },
       );
 
+      await workflowPlanningHook['tool.execute.before'](
+        input as {
+          tool: string;
+          sessionID?: string;
+          callID?: string;
+        },
+        output as { args?: unknown },
+      );
+
       // No-op for divoom
     },
 
@@ -944,8 +963,14 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
     // Track which agent each session uses (needed for serve-mode prompt
     // injection)
     'chat.message': async (
-      input: { sessionID: string; agent?: string },
-      output?: { message?: { agent?: string } },
+      input: {
+        sessionID: string;
+        agent?: string;
+        model?: { providerID: string; modelID: string };
+        messageID?: string;
+        variant?: string;
+      },
+      output: { message?: { agent?: string }; parts?: unknown[] },
     ) => {
       const rawAgent = input.agent ?? output?.message?.agent;
       const agent = rawAgent
@@ -1061,6 +1086,10 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
         input,
         typedOutput,
       );
+      await workflowPlanningHook['experimental.chat.messages.transform'](
+        input,
+        typedOutput,
+      );
       await filterAvailableSkillsHook['experimental.chat.messages.transform'](
         input,
         typedOutput,
@@ -1087,7 +1116,7 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
             tool: meta.tool,
             sessionID: meta.sessionID,
             callID: meta.callID,
-            error: error instanceof Error ? error.message : String(error),
+            error: formatError(error),
           });
         }
       };
@@ -1137,6 +1166,17 @@ const OhMyOpenCodeLite: Plugin = async (ctx) => {
             callID?: string;
           },
           output as { output: unknown },
+        ),
+      );
+
+      await runPostToolHook('workflow-planning', () =>
+        workflowPlanningHook['tool.execute.after'](
+          input as {
+            tool: string;
+            sessionID?: string;
+            callID?: string;
+          },
+          output as { output: unknown; metadata?: unknown },
         ),
       );
     },

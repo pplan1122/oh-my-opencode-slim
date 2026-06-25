@@ -33,7 +33,7 @@ export function createAutoUpdateCheckerHook(
   let hasChecked = false;
 
   return {
-    event: ({ event }: { event: { type: string; properties?: unknown } }) => {
+    event: async ({ event }: { event: { type: string; properties?: unknown } }) => {
       if (event.type !== 'session.created') return;
       if (hasChecked) return;
 
@@ -292,7 +292,7 @@ async function runBunInstallSafe(installDir: string): Promise<boolean> {
       try {
         proc.kill();
       } catch {
-        /* empty */
+        /* Process may have already exited */
       }
       return false;
     }
@@ -323,7 +323,7 @@ function showToast(
     .showToast({
       body: { title, message, variant, duration },
     })
-    .catch(() => {});
+    .catch(() => {}); // Toast notification is best-effort
 }
 
 export type { AutoUpdateCheckerOptions } from './types';
