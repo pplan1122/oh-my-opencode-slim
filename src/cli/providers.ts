@@ -46,7 +46,7 @@ export const MODEL_MAPPINGS = {
   },
   'opencode-go': {
     orchestrator: { model: 'opencode-go/glm-5.1' },
-    oracle: { model: 'opencode-go/deepseek-v4-pro', variant: 'max' },
+    oracle: { model: 'volcengine-agent-plan/ark-code-latest', variant: 'max' },
     council: { model: 'opencode-go/deepseek-v4-pro', variant: 'high' },
     librarian: { model: 'opencode-go/minimax-m2.7' },
     explorer: { model: 'opencode-go/minimax-m2.7' },

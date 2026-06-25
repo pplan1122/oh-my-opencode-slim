@@ -76,7 +76,7 @@ describe('providers', () => {
     const agents = (config.presets as any)['opencode-go'];
     expect(agents).toBeDefined();
     expect(agents.orchestrator.model).toBe('opencode-go/glm-5.1');
-    expect(agents.oracle.model).toBe('opencode-go/deepseek-v4-pro');
+    expect(agents.oracle.model).toBe('volcengine-agent-plan/ark-code-latest');
     expect(agents.oracle.variant).toBe('max');
     expect(agents.council.model).toBe('opencode-go/deepseek-v4-pro');
     expect(agents.council.variant).toBe('high');
