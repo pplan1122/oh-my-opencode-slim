@@ -245,7 +245,7 @@ async function writeFileAtomically(
     }
     await fs.rename(tempPath, target);
   } finally {
-    await fs.rm(tempPath, { force: true }).catch(() => undefined);
+    await fs.rm(tempPath, { force: true }).catch(() => undefined); // Best-effort temp file cleanup
   }
 }
 

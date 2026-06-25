@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, extname, join } from 'node:path';
+import { formatError, logError } from '../utils/errors';
 import type { MessageWithParts } from './types';
 
 // Debounce: only run cleanup every 10 minutes per directory
@@ -81,10 +82,10 @@ function cleanupAllSessions(saveDir: string): void {
       } else {
         try {
           if (now - statSync(fp).mtimeMs > maxAge) unlinkSync(fp);
-        } catch {}
+        } catch (e) { logError('[image-hook]', 'clean file removal failed', e); }
       }
     }
-  } catch {}
+  } catch (e) { logError('[image-hook]', 'clean readdir failed', e); }
 
   for (const dir of dirsToScan) {
     try {
@@ -107,9 +108,9 @@ function cleanupAllSessions(saveDir: string): void {
       if (!isEmpty && allRemoved) {
         try {
           rmdirSync(dir);
-        } catch {}
+        } catch (e) { logError('[image-hook]', 'clean rmdir failed', e); }
       }
-    } catch {}
+    } catch (e) { logError('[image-hook]', 'clean dir iteration failed', e); }
   }
 }
 
@@ -142,7 +143,7 @@ function writeUniqueFile(
         continue;
       }
 
-      log(`[image-hook] failed to save image: ${e}`);
+      log(`[image-hook] failed to save image: ${formatError(e)}`);
       return null;
     }
   }
@@ -191,7 +192,7 @@ export function processImageAttachments(args: {
     mkdirSync(saveDir, { recursive: true });
     if (!existsSync(gitignorePath)) writeFileSync(gitignorePath, '*\n');
   } catch (e) {
-    log(`[image-hook] failed to create image directory: ${e}`);
+    log(`[image-hook] failed to create image directory: ${formatError(e)}`);
   }
 
   cleanupAllSessions(saveDir);
@@ -204,7 +205,7 @@ export function processImageAttachments(args: {
     try {
       mkdirSync(targetDir, { recursive: true });
     } catch (e) {
-      log(`[image-hook] failed to create target image directory: ${e}`);
+      log(`[image-hook] failed to create target image directory: ${formatError(e)}`);
     }
 
     // Save each image to .opencode/images/ and collect paths

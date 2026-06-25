@@ -21,6 +21,15 @@ describe('skills permissions', () => {
     const oraclePerms = getSkillPermissionsForAgent('oracle');
     expect(oraclePerms.simplify).toBe('allow');
 
+    // Oracle should have book-rules allowed (reviewer agent)
+    expect(oraclePerms['book-rules/clean-code']).toBe('allow');
+    expect(oraclePerms['book-rules/clean-architecture']).toBe('allow');
+    expect(oraclePerms['book-rules/refactoring']).toBe('allow');
+
+    // Non-reviewer agents should NOT have book-rules
+    const fixerPerms = getSkillPermissionsForAgent('fixer');
+    expect(fixerPerms['book-rules/clean-code']).toBeUndefined();
+
     const orchestratorPerms = getSkillPermissionsForAgent('orchestrator');
     expect(orchestratorPerms.clonedeps).toBe('allow');
     expect(orchestratorPerms.deepwork).toBe('allow');

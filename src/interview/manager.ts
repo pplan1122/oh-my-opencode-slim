@@ -2,6 +2,7 @@ import path from 'node:path';
 import type { PluginInput } from '@opencode-ai/plugin';
 import type { PluginConfig } from '../config';
 import { log } from '../utils';
+import { formatError, logError } from '../utils/errors';
 import {
   DEFAULT_DASHBOARD_PORT,
   probeDashboard,
@@ -100,8 +101,8 @@ export function createInterviewManager(
       for (const sessionID of registeredSessions) {
         const interviewId = service.getActiveInterviewId(sessionID);
         if (!interviewId) continue;
-        pollPendingAnswers(sessionID).catch(() => {});
-        pollNudgeAction(sessionID).catch(() => {});
+        pollPendingAnswers(sessionID).catch((e) => { logError('[interview]', 'poll pending answers failed', e); });
+        pollNudgeAction(sessionID).catch((e) => { logError('[interview]', 'poll nudge action failed', e); });
       }
     }, FALLBACK_POLL_INTERVAL);
     fallbackTimer?.unref();
@@ -213,7 +214,7 @@ export function createInterviewManager(
           pushStateViaHttp(dashboardBaseUrl, authToken, id, state).catch(
             (err) => {
               log('[interview] failed to push state to dashboard', {
-                error: err instanceof Error ? err.message : String(err),
+                error: formatError(err),
               });
             },
           );
@@ -227,7 +228,7 @@ export function createInterviewManager(
             interview,
           ).catch((err) => {
             log('[interview] failed to register interview with dashboard', {
-              error: err instanceof Error ? err.message : String(err),
+              error: formatError(err),
             });
           });
         });
@@ -241,7 +242,7 @@ export function createInterviewManager(
       }
     } catch (err) {
       log('[interview] dashboard mode init failed', {
-        error: err instanceof Error ? err.message : String(err),
+        error: formatError(err),
       });
     } finally {
       initDone = true;
@@ -273,7 +274,7 @@ export function createInterviewManager(
       });
     } catch (err) {
       log('[interview] failed to register session with dashboard', {
-        error: err instanceof Error ? err.message : String(err),
+        error: formatError(err),
       });
     }
   }
@@ -307,7 +308,7 @@ export function createInterviewManager(
       await service.submitAnswers(interviewId, data.answers);
     } catch (err) {
       log('[interview] failed to poll pending answers', {
-        error: err instanceof Error ? err.message : String(err),
+        error: formatError(err),
       });
     }
   }
@@ -338,7 +339,7 @@ export function createInterviewManager(
       await service.handleNudgeAction(interviewId, data.action);
     } catch (err) {
       log('[interview] failed to poll nudge action', {
-        error: err instanceof Error ? err.message : String(err),
+        error: formatError(err),
       });
     }
   }
@@ -405,7 +406,7 @@ export function createInterviewManager(
           if (interviewId) {
             service.getInterviewState(interviewId).catch((err) => {
               log('[interview] failed to refresh state', {
-                error: err instanceof Error ? err.message : String(err),
+                error: formatError(err),
               });
             });
           }

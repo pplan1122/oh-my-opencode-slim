@@ -7,6 +7,7 @@ import {
   type Multiplexer,
 } from '../multiplexer';
 import type { BackgroundJobBoard } from '../utils/background-job-board';
+import { toErrorWithCause } from '../utils/errors';
 import { log } from '../utils/logger';
 
 interface TrackedSession {
@@ -399,7 +400,7 @@ export class MultiplexerSessionManager {
     try {
       return JSON.parse(body) as Record<string, { type: string }>;
     } catch (err) {
-      throw new Error(`session status response was not valid JSON: ${err}`);
+      throw toErrorWithCause(err, 'session status response was not valid JSON');
     }
   }
 

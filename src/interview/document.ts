@@ -47,11 +47,11 @@ export function relativeInterviewPath(
  * Checks absolute paths, relative paths, and output-folder-relative paths.
  * Returns null if no matching file is found.
  */
-export function resolveExistingInterviewPath(
+export async function resolveExistingInterviewPath(
   directory: string,
   outputFolder: string,
   value: string,
-): string | null {
+): Promise<string | null> {
   const trimmed = value.trim();
   if (!trimmed) {
     return null;
@@ -82,8 +82,11 @@ export function resolveExistingInterviewPath(
     ) {
       continue;
     }
-    if (fsSync.existsSync(candidate)) {
+    try {
+      await fs.stat(candidate);
       return candidate;
+    } catch {
+      continue;
     }
   }
 

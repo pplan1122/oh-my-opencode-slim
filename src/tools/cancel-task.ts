@@ -6,6 +6,7 @@ import {
 import type { BackgroundJobBoard } from '../utils/background-job-board';
 import { isRecord as isObjectRecord } from '../utils/guards';
 import { log } from '../utils/logger';
+import { formatError } from '../utils/errors';
 import { abortSessionWithTimeout, withTimeout } from '../utils/session';
 
 const z = tool.schema;
@@ -122,21 +123,21 @@ Use only for obsolete, wrong, conflicting, or user-requested cancellation. Accep
         log('[cancel-task] abort failed', {
           taskID: job.taskID,
           stillRunning,
-          error: error instanceof Error ? error.message : String(error),
+          error: formatError(error),
         });
         options.backgroundJobBoard.updateStatus({
           taskID: job.taskID,
           state: 'running',
           statusUncertain: true,
           lastStatusError:
-            error instanceof Error ? error.message : String(error),
+            formatError(error),
         });
         return [
           `task_id: ${job.taskID}`,
           'state: running',
           '',
           '<task_error>',
-          error instanceof Error ? error.message : String(error),
+          formatError(error),
           '</task_error>',
         ].join('\n');
       }
@@ -181,14 +182,14 @@ async function cancelSessionByID(
     log('[cancel-task] raw session abort failed', {
       taskID,
       stillRunning,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatError(error),
     });
     return [
       `task_id: ${taskID}`,
       `state: ${stillRunning ? 'running' : 'error'}`,
       '',
       '<task_error>',
-      error instanceof Error ? error.message : String(error),
+      formatError(error),
       '</task_error>',
     ].join('\n');
   }
@@ -219,7 +220,7 @@ async function abortAndVerifySession(
   } catch (error) {
     log('[cancel-task] abort call failed', {
       taskID,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatError(error),
       canDelete: canDeleteSession(options.client),
     });
     if (!canDeleteSession(options.client)) throw error;
@@ -359,7 +360,7 @@ async function deleteAndVerifySession(
     log('[cancel-task] session delete failed; verifying live state', {
       taskID,
       reason,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatError(error),
     });
     const status = await getSessionStatus(options.client, taskID);
     log('[cancel-task] delete failure verification status', {
@@ -451,7 +452,7 @@ async function getSessionStatus(
   } catch (error) {
     log('[cancel-task] session status lookup failed', {
       taskID,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatError(error),
     });
     return { status: undefined, source: 'lookup-error', keys: [] };
   }
@@ -487,7 +488,7 @@ async function getSessionParentID(
   } catch (error) {
     log('[cancel-task] session metadata lookup failed', {
       taskID,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatError(error),
     });
     return undefined;
   }

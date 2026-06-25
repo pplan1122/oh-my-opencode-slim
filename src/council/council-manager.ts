@@ -313,7 +313,7 @@ export class CouncilManager {
       return extraction.text;
     } finally {
       if (sessionId) {
-        this.client.session.abort({ path: { id: sessionId } }).catch(() => {});
+        this.client.session.abort({ path: { id: sessionId } }).catch(() => {}); // Best-effort abort in finally
         if (this.depthTracker) {
           this.depthTracker.cleanup(sessionId);
         }

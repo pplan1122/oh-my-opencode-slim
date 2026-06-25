@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { PluginInput } from '@opencode-ai/plugin';
 import type { InterviewConfig } from '../config';
+import { formatError } from '../utils/errors';
 import {
   createInternalAgentTextPart,
   hasInternalInitiatorMarker,
@@ -97,7 +98,7 @@ function openBrowser(url: string): void {
     child.unref();
   } catch (error) {
     log('[interview] failed to spawn browser opener:', {
-      error: error instanceof Error ? error.message : String(error),
+      error: formatError(error),
       url,
     });
   }
@@ -241,7 +242,7 @@ export function createInterviewService(
       });
     } catch (error) {
       log('[interview] failed to rename file:', {
-        error: error instanceof Error ? error.message : String(error),
+        error: formatError(error),
       });
     }
   }
@@ -570,7 +571,7 @@ export function createInterviewService(
       return;
     }
 
-    const resumePath = resolveExistingInterviewPath(
+    const resumePath = await resolveExistingInterviewPath(
       ctx.directory,
       outputFolder,
       idea,

@@ -1616,7 +1616,7 @@ export function renderInterviewPage(
             if (moreBtn) moreBtn.disabled = false;
             if (confirmBtn) confirmBtn.disabled = false;
           } else {
-            try { await refresh(); } catch (_) {}
+            try { await refresh(); } catch (e) { console.warn('[dashboard] refresh failed:', e); }
             schedulePoll(); // Restart polling — nudge may reactivate interview
           }
         } catch (_err) {
@@ -1631,7 +1631,7 @@ export function renderInterviewPage(
 
       function schedulePoll() {
         setTimeout(async () => {
-          try { await refresh(); } catch (_) {}
+          try { await refresh(); } catch (e) { console.warn('[dashboard] poll refresh failed:', e); }
           // Stop polling for terminal states
           const terminalModes = ['abandoned', 'completed', 'session-disconnected'];
           if (!terminalModes.includes(state.data?.mode)) schedulePoll();

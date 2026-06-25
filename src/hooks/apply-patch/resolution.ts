@@ -1,4 +1,5 @@
 import * as fs from 'node:fs/promises';
+import { toErrorWithCause } from '../../utils/errors';
 
 import {
   matchPreparedAutoRescueComparator,
@@ -43,7 +44,7 @@ async function readFileLinesWithEol(file: string): Promise<FileLines> {
   try {
     text = await fs.readFile(file, 'utf-8');
   } catch (error) {
-    throw new Error(`Failed to read file ${file}: ${error}`);
+    throw toErrorWithCause(error, `Failed to read file ${file}`);
   }
 
   return splitFileLines(text);

@@ -10,6 +10,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { URL } from 'node:url';
+import { formatError, logError } from '../utils/errors';
 import { log } from '../utils';
 import {
   extractSummarySection,
@@ -304,45 +305,60 @@ export function createDashboardServer(config: DashboardConfig): {
     }
 
     const directories = getKnownDirectories();
-    const items: InterviewFileItem[] = [];
 
-    for (const dir of directories) {
-      const interviewDir = path.join(dir, config.outputFolder);
-      let entries: string[];
-      try {
-        entries = await fs.readdir(interviewDir);
-      } catch {
-        continue;
-      }
-
-      for (const entry of entries) {
-        if (!entry.endsWith('.md')) continue;
-
-        let content: string;
+    // Parallel: process all directories concurrently
+    const dirResults = await Promise.all(
+      [...directories].map(async (dir) => {
+        const interviewDir = path.join(dir, config.outputFolder);
+        let entries: string[];
         try {
-          content = await fs.readFile(path.join(interviewDir, entry), 'utf8');
+          entries = await fs.readdir(interviewDir);
         } catch {
-          continue;
+          return [];
         }
 
-        // Extract title and summary using shared extractors
-        const title = extractTitle(content) || entry.replace(/\.md$/, '');
-        const summary = extractSummarySection(content);
-        const baseName = entry.replace(/\.md$/, '');
-        const fm = parseFrontmatter(content);
+        // Parallel: read all .md files within this directory
+        const fileResults = await Promise.all(
+          entries
+            .filter((entry) => entry.endsWith('.md'))
+            .map(async (entry) => {
+              try {
+                const content = await fs.readFile(
+                  path.join(interviewDir, entry),
+                  'utf8',
+                );
 
-        items.push({
-          fileName: entry,
-          resumeCommand: `/interview ${baseName}`,
-          title,
-          summary:
-            summary.length > 120 ? `${summary.slice(0, 120)}\u2026` : summary,
-          sessionID: fm?.sessionID,
-          directory: dir,
-        });
-      }
-    }
+                // Extract title and summary using shared extractors
+                const title =
+                  extractTitle(content) || entry.replace(/\.md$/, '');
+                const summary = extractSummarySection(content);
+                const baseName = entry.replace(/\.md$/, '');
+                const fm = parseFrontmatter(content);
 
+                return {
+                  fileName: entry,
+                  resumeCommand: `/interview ${baseName}`,
+                  title,
+                  summary:
+                    summary.length > 120
+                      ? `${summary.slice(0, 120)}\u2026`
+                      : summary,
+                  sessionID: fm?.sessionID,
+                  directory: dir,
+                } as InterviewFileItem;
+              } catch {
+                return null;
+              }
+            }),
+        );
+
+        return fileResults.filter(
+          (item): item is InterviewFileItem => item !== null,
+        );
+      }),
+    );
+
+    const items = dirResults.flat();
     const sorted = items.sort((a, b) => a.title.localeCompare(b.title));
     fileCache = { items: sorted, at: Date.now() };
     return sorted;
@@ -1011,8 +1027,7 @@ export function createDashboardServer(config: DashboardConfig): {
       const server = createServer((request, response) => {
         handleRequest(request, response).catch((error: unknown) => {
           sendJson(response, 500, {
-            error:
-              error instanceof Error ? error.message : 'Internal server error',
+            error: formatError(error),
           });
         });
       });
@@ -1064,7 +1079,7 @@ export function createDashboardServer(config: DashboardConfig): {
       fileCache = null;
       // Rebuild from files when first session registers (failover recovery)
       if (wasEmpty) {
-        rebuildFromFiles().catch(() => {});
+        rebuildFromFiles().catch((e) => { logError('[dashboard]', 'rebuild from files failed', e); });
       }
     },
     removeSession: (sessionID: string) => {
@@ -1176,7 +1191,7 @@ export async function tryBecomeDashboard(
       await dashboard.start();
       return dashboard;
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatError(error);
       if (message.includes('already in use')) {
         // Another process won the race, wait with jitter and retry
         if (attempt < maxAttempts - 1) {

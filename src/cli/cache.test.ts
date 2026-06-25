@@ -376,7 +376,7 @@ describe('warmOpenCodePluginCache', () => {
           'packages',
           'oh-my-opencode-slim@latest',
         ),
-        error: 'Failed to write cache package.json: Error: disk full',
+        error: 'Failed to write cache package.json: disk full',
       });
       expect(crossSpawnMock).not.toHaveBeenCalled();
     } finally {

@@ -5,6 +5,7 @@ import {
   type ServerResponse,
 } from 'node:http';
 import { URL } from 'node:url';
+import { formatError } from '../utils/errors';
 import { extractResumeSlug, readJsonBody, sendHtml, sendJson } from './helpers';
 import type {
   InterviewAnswer,
@@ -19,7 +20,7 @@ function getSubmissionStatus(error: unknown): number {
     return 400;
   }
 
-  const message = error instanceof Error ? error.message : '';
+  const message = formatError(error);
   if (message === 'Interview not found') {
     return 404;
   }
@@ -156,8 +157,7 @@ export function createInterviewServer(deps: {
         const state = await deps.getState(decodeURIComponent(stateMatch[1]));
         sendJson(response, 200, state);
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Interview not found';
+        const message = formatError(error);
         const status = message === 'Interview not found' ? 404 : 500;
         sendJson(response, status, { error: message });
       }
@@ -184,8 +184,7 @@ export function createInterviewServer(deps: {
           message: 'Answers submitted to the OpenCode session.',
         });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to submit answers.';
+        const message = formatError(error);
         const status = getSubmissionStatus(error);
         sendJson(response, status, {
           ok: false,
@@ -217,8 +216,7 @@ export function createInterviewServer(deps: {
         );
         sendJson(response, 200, { ok: true, message: 'Nudge sent.' });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to nudge.';
+        const message = formatError(error);
         const status = message === 'Interview not found' ? 404 : 500;
         sendJson(response, status, { ok: false, message });
       }
@@ -241,8 +239,7 @@ export function createInterviewServer(deps: {
       const server = createServer((request, response) => {
         handle(request, response).catch((error) => {
           sendJson(response, 500, {
-            error:
-              error instanceof Error ? error.message : 'Internal server error',
+            error: formatError(error),
           });
         });
       });

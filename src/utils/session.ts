@@ -2,6 +2,7 @@
  * Shared session utilities for council and background managers.
  */
 
+import { logError } from './errors';
 import type { PluginInput } from '@opencode-ai/plugin';
 
 type OpencodeClient = PluginInput['client'];
@@ -109,7 +110,7 @@ export async function promptWithTimeout(
 
   try {
     const promptPromise = client.session.prompt(args);
-    promptPromise.catch(() => {});
+    promptPromise.catch((e) => { logError('[session]', 'prompt background error', e); });
 
     const racers: Array<Promise<unknown>> = [promptPromise];
 

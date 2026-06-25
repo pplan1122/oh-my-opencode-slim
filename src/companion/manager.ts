@@ -10,6 +10,7 @@ import {
 import * as os from 'node:os';
 import * as path from 'node:path';
 import type { CompanionConfig } from '../config/schema';
+import { formatError } from '../utils/errors';
 import { log } from '../utils/logger';
 
 interface CompanionSession {
@@ -105,7 +106,7 @@ function writeState(mutator: (state: CompanionState) => void): void {
       release();
     }
   } catch (err) {
-    log('[companion] write failed', String(err));
+    log('[companion] write failed', formatError(err));
   }
 }
 
@@ -117,7 +118,7 @@ function acquireStateLock(file: string): () => void {
       return () => {
         try {
           rmSync(lock, { recursive: true, force: true });
-        } catch {}
+        } catch {} // Best-effort lock cleanup
       };
     } catch (err) {
       const code = (err as NodeJS.ErrnoException).code;
@@ -285,7 +286,7 @@ export class CompanionManager {
         }
       });
     } catch (err) {
-      log('[companion] flush failed', String(err));
+      log('[companion] flush failed', formatError(err));
     }
   }
 
@@ -322,7 +323,7 @@ export class CompanionManager {
         }),
       );
     } catch (err) {
-      log('[companion] spawn failed', String(err));
+      log('[companion] spawn failed', formatError(err));
     }
   }
 }

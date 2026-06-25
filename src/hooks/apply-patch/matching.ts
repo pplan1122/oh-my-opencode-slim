@@ -125,28 +125,43 @@ function tryMatch(
   if (eof) {
     const at = lines.length - pattern.length;
     if (at >= start) {
-      let ok = true;
-      for (let index = 0; index < pattern.length; index += 1) {
-        if (!comparator.same(lines[at + index], pattern[index])) {
-          ok = false;
-          break;
+      // Quick first-line check
+      if (comparator.same(lines[at], pattern[0])) {
+        let ok = true;
+        for (let index = 1; index < pattern.length; index += 1) {
+          if (!comparator.same(lines[at + index], pattern[index])) {
+            ok = false;
+            break;
+          }
         }
-      }
 
-      if (ok) {
-        return {
-          index: at,
-          comparator: comparator.name,
-          exact: comparator.exact,
-        };
+        if (ok) {
+          return {
+            index: at,
+            comparator: comparator.name,
+            exact: comparator.exact,
+          };
+        }
       }
     }
   }
 
   for (let index = start; index <= lines.length - pattern.length; index += 1) {
+    // Quick first-line check
+    if (!comparator.same(lines[index], pattern[0])) continue;
+
+    // For exact comparator with multi-line pattern, also check last line
+    if (
+      comparator.exact &&
+      pattern.length > 1 &&
+      lines[index + pattern.length - 1] !== pattern[pattern.length - 1]
+    ) {
+      continue;
+    }
+
     let ok = true;
 
-    for (let inner = 0; inner < pattern.length; inner += 1) {
+    for (let inner = 1; inner < pattern.length; inner += 1) {
       if (!comparator.same(lines[index + inner], pattern[inner])) {
         ok = false;
         break;
@@ -207,9 +222,12 @@ export function list(
   const out: number[] = [];
 
   for (let index = start; index <= lines.length - pattern.length; index += 1) {
+    // Quick first-line check
+    if (!same(lines[index], pattern[0])) continue;
+
     let ok = true;
 
-    for (let inner = 0; inner < pattern.length; inner += 1) {
+    for (let inner = 1; inner < pattern.length; inner += 1) {
       if (!same(lines[index + inner], pattern[inner])) {
         ok = false;
         break;
